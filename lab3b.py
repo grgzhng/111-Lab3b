@@ -187,6 +187,7 @@ if __name__ == '__main__':
         elif line[0] == 'INDIRECT':
             indirects.append(Indirect(line))
         else:
-            exitWithError("Unrecognized line in csv - unable to be parsed\n")
+            exitWithError("Unrecognized line in csv - `unable to be parsed\n")
 
+    examineBlocks()
     examineInodes()
