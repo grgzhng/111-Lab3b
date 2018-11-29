@@ -191,3 +191,5 @@ if __name__ == '__main__':
 
     examineBlocks()
     examineInodes()
+
+    exit(2 if err > 0 else 0)
