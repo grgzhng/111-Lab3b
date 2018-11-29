@@ -75,7 +75,8 @@ def exitWithError(msg):
     sys.stderr.write(msg)
     exit(1)
 
-def inodeAudit():
+
+def examineInodes():
     global inodes, freeInodes, err, unallocInodeNums, allocInodes
 
     unallocInodeNums = freeInodes
@@ -94,11 +95,62 @@ def inodeAudit():
 
     # check bitmap
     for inode in range(sb.first_inode, sb.inode_count):
-        isUsed = False if len(list(filter(lambda x: x.inode_num == inode, inodes))) <= 0 else True
+        isUsed = False if len(
+            list(filter(lambda x: x.inode_num == inode, inodes))) <= 0 else True
         if not isUsed and inode not in freeInodes:
             print("UNALLOCATED INODE %s NOT ON FREELIST" % inode)
             unallocInodeNums.append(inode)
             err += 1
+
+
+def examineBlocks():
+    global err
+    legalBlocks = {}
+    types = ["", "INDIRECT ", "DOUBLE INDIRECT ", "TRIPLE INDIRECT "]
+
+    def check(block, inodeNum, offset, typeBlock):
+        global err
+        maxBlock = sb.block_count - 1
+
+        if block != 0:
+            if block > maxBlock:
+                print("INVALID {}BLOCK {} IN INODE {} AT OFFSET {}".format(
+                    types[typeBlock], block, inodeNum, offset))
+                err += 1
+            elif block < 8:
+                print("RESERVED {}BLOCK {} IN INODE {} AT OFFSET {}".format(
+                    types[typeBlock], block, inodeNum, offset))
+                err += 1
+            elif block in legalBlocks:
+                legalBlocks[block].append((inodeNum, offset, typeBlock))
+            else:
+                legalBlocks[block] = [(inodeNum, offset, typeBlock)]
+
+    for inode in inodes:
+        for offset, block in enumerate(inode.addresses):
+            check(block, inode.inode_num, offset, 0)
+        check(inode.single_ind, inode.inode_num, 12, 1)
+        check(inode.double_ind, inode.inode_num, 268, 2)
+        check(inode.triple_ind, inode.inode_num, 65804, 3)
+
+    for indirectBlock in indirects:
+        check(indirectBlock.reference_num, indirectBlock.inode_num,
+              indirectBlock.offset, indirectBlock.level)
+
+    for block in range(8, sb.block_count):
+        if block not in freeBlocks and block not in legalBlocks:
+            print("UNREFERENCED BLOCK {}".format(block))
+            err += 1
+        elif block in freeBlocks and block in legalBlocks:
+            print("ALLOCATED BLOCK {} ON FREELIST".format(block))
+            err += 1
+        elif block in legalBlocks and len(legalBlocks[block]) > 1:
+            inodeList = legalBlocks[block]
+            for inodeNum, offset, typeBlock in inodeList:
+                print("DUPLICATE {}BLOCK {} IN INODE {} AT OFFSET {}".format(
+                    types[typeBlock], block, inodeNum, offset))
+                err += 1
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -137,4 +189,4 @@ if __name__ == '__main__':
         else:
             exitWithError("Unrecognized line in csv - unable to be parsed\n")
 
-    inodeAudit()
+    examineInodes()
