@@ -57,6 +57,13 @@ class Inode:
 		self.double_ind=int(line[25])
 		self.triple_ind=int(line[26])
 
+class Indirect:
+	def __init__(self, line):
+		self.inode_num = int(line[1])
+		self.level = int(line[2])
+		self.offset = int(line[3])
+		self.block_num = int(line[4])
+		self.reference_num = int(line[5])
 
 def exitWithError(msg):
     sys.stderr.write(msg)
