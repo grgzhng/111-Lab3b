@@ -13,7 +13,7 @@ freeBlocks = []
 freeInodes = []
 inodes = []
 indirects = []
-directories = []
+dirents = []
 
 
 class SuperBlock:
@@ -27,7 +27,7 @@ class SuperBlock:
         self.first_inode = int(line[7])
 
 
-class Direct:
+class Dirent:
     def __init__(self, line):
         self.parent_inode = int(line[1])
         self.logical_offset = int(line[2])
@@ -50,10 +50,11 @@ class Inode:
         self.atime = line[9]
         self.size = int(line[10])
         self.blocks_num = int(line[11])
-        self.addresses = list(map(int,line[12:24]))
+        self.addresses = list(map(int, line[12:24]))
         self.single_ind = int(line[24])
         self.double_ind = int(line[25])
         self.triple_ind = int(line[26])
+
 
 class Indirect:
     def __init__(self, line):
@@ -63,32 +64,31 @@ class Indirect:
         self.block_num = int(line[4])
         self.reference_num = int(line[5])
 
+
 def exitWithError(msg):
     sys.stderr.write(msg)
     exit(1)
 
 
 if __name__ == '__main__':
-    if(len(sys.argv)) != 2:
+    if len(sys.argv) != 2:
         exitWithError("Usage: ./lab3b filename\n")
 
-    fname=sys.argv[1]
+    fname = sys.argv[1]
     if not os.path.isfile(fname):
         exitWithError("File doesn't exist\n")
 
-    global sb, freeBlocks, freeInodes, inodes, indirects
-
     # handle parsing of csv & moving into data structures
-    f=open(fname, 'r')
+    f = open(fname, 'r')
     if not f:
         exitWithError("Failed to open file\n")
     if os.path.getsize(fname) <= 0:
         exitWithError("File is empty\n")
 
     # use csv to read lines of file and add them to d.s.
-    reader=csv.reader(f, delimiter=',')
+    reader = csv.reader(f, delimiter=',')
     for line in reader:
-        if len(row) <= 0:
+        if len(line) <= 0:
             exitWithError("File has a blank line\n")
         if line[0] == 'SUPERBLOCK':
             sb = SuperBlock(line)
@@ -98,8 +98,8 @@ if __name__ == '__main__':
             freeBlocks.append(int(line[1]))
         elif line[0] == 'IFREE':
             freeInodes.append(int(line[1]))
-        elif line[0] == 'DIRECT':
-            directories.append(Direct(line))
+        elif line[0] == 'DIRENT':
+            dirents.append(Dirent(line))
         elif line[0] == 'INODE':
             inodes.append(Inode(line))
         elif line[0] == 'INDIRECT':
