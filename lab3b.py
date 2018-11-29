@@ -14,6 +14,9 @@ freeInodes = []
 inodes = []
 indirects = []
 dirents = []
+unallocInodeNums = []
+allocInodes = []
+err = 0
 
 
 class SuperBlock:
@@ -55,6 +58,9 @@ class Inode:
         self.double_ind = int(line[25])
         self.triple_ind = int(line[26])
 
+    def __str__(self):
+        return str(self.type)
+
 
 class Indirect:
     def __init__(self, line):
@@ -69,6 +75,30 @@ def exitWithError(msg):
     sys.stderr.write(msg)
     exit(1)
 
+def inodeAudit():
+    global inodes, freeInodes, err, unallocInodeNums, allocInodes
+
+    unallocInodeNums = freeInodes
+    for inode in inodes:
+        if inode.type == '0':
+            if inode.inode_num not in freeInodes:
+                print("UNALLOCATED INODE %s NOT ON FREELIST" % inode.inode_num)
+                unallocInodeNums.append(inode.inode_num)
+                err += 1
+        else:
+            if inode.inode_num in freeInodes:
+                print("ALLOCATED INODE %s ON FREELIST" % inode.inode_num)
+                unallocInodeNums.remove(inode.inode_num)
+                err += 1
+            allocInodes.append(inode)
+
+    # check bitmap
+    for inode in range(sb.first_inode, sb.inode_count):
+        isUsed = False if len(list(filter(lambda x: x.inode_num == inode, inodes))) <= 0 else True
+        if not isUsed and inode not in freeInodes:
+            print("UNALLOCATED INODE %s NOT ON FREELIST" % inode)
+            unallocInodeNums.append(inode)
+            err += 1
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -106,3 +136,5 @@ if __name__ == '__main__':
             indirects.append(Indirect(line))
         else:
             exitWithError("Unrecognized line in csv - unable to be parsed\n")
+
+    inodeAudit()
