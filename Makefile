@@ -3,5 +3,13 @@
 # ID: 104906833, 504993197
 
 default:
-	@chmod +x lab3b
-	@echo "Success!"
+	rm -f lab3b
+	echo '#!/bin/bash' > lab3b
+	echo 'python lab3b.py $$1' >> lab3b
+	chmod +x lab3b
+
+dist:
+	tar -czvf lab3b-504993197.tar.gz lab3b.py Makefile README
+
+clean:
+	rm -f lab3b *.tar.gz
