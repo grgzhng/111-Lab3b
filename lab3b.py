@@ -152,6 +152,54 @@ def examineBlocks():
                 err += 1
 
 
+def examineDirents():
+    global err
+    numInodes = sb.inode_count
+    inodeToLink = {}
+    inodeToPar = {2: 2}
+
+    for dirent in dirents:
+        if dirent.file_num > numInodes:
+            print("DIRECTORY INODE {} NAME {} INVALID INODE {}".format(
+                dirent.parent_inode, dirent.name, dirent.file_num))
+            err += 1
+        elif dirent.file_num in unallocInodeNums:
+            print("DIRECTORY INODE {} NAME {} UNALLOCATED INODE {}".format(
+                dirent.parent_inode, dirent.name, dirent.file_num))
+            err += 1
+        else:
+            inodeToLink[dirent.file_num] = inodeToLink.get(
+                dirent.file_num, 0) + 1
+
+    for inode in allocInodes:
+        if inode.inode_num in inodeToLink:
+            if inode.link_count != inodeToLink[inode.inode_num]:
+                print("INODE {} HAS {} LINKS BUT LINKCOUNT IS {}".format(
+                    inode.inode_num, inodeToLink[inode.inode_num], inode.link_count))
+                err += 1
+        elif inode.link_count != 0:
+            print("INODE {} HAS 0 LINKS BUT LINKCOUNT IS {}".format(
+                inode.inode_num, inode.link_count))
+            err += 1
+
+    for dirent in dirents:
+        if dirent.file_num <= sb.inode_count and dirent.file_num not in unallocInodeNums:
+            if dirent.name != "'..'" and dirent.name != "'.'":
+                inodeToPar[dirent.file_num] = dirent.parent_inode
+
+    for dirent in dirents:
+        if dirent.name == "'.'":
+            if dirent.file_num != dirent.parent_inode:
+                print("DIRECTORY INODE {} NAME '.' LINK TO INODE {} SHOULD BE {}".format(
+                    dirent.parent_inode, dirent.file_num, dirent.parent_inode))
+                err += 1
+        elif dirent.name == "'..'":
+            if dirent.file_num != inodeToPar[dirent.parent_inode]:
+                print ("DIRECTORY INODE {} NAME '..' LINK TO INODE {} SHOULD BE {}".format(
+                    dirent.parent_inode, dirent.file_num, inodeToPar[dirent.parent_inode]))
+                err += 1
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         exitWithError("Usage: ./lab3b filename\n")
@@ -191,5 +239,6 @@ if __name__ == '__main__':
 
     examineBlocks()
     examineInodes()
+    examineDirents()
 
     exit(2 if err > 0 else 0)
