@@ -3,3 +3,9 @@ EMAIL: claytonchu99@gmail.com, georgezhang@ucla.edu
 ID: 104906833, 504993197
 
 Included files:
+lab3b.py: Source code written in python to analyzes csv file for the consistency and correctness of inodes, directories, and blocks
+Makefile: make that contains dist, default, and clean
+README: this file; contains relevant info about the files in the tarball
+
+Sources/References:
+http://www.nongnu.org/ext2-doc/ext2.html
